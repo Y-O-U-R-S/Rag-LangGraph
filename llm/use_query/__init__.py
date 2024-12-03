@@ -1,4 +1,4 @@
-from .reranker import search_with_faiss, search_and_rerank, search_and_cohere_rerank
+from .reranker import search_with_faiss, search_and_rerank, search_and_cohere_rerank, cohere_rerank_only
 from .query_handler import generate_response, check_hallucination, generate_answer, rewrite_query, is_popup_store_question
 
 __all__ = [
@@ -10,4 +10,5 @@ __all__ = [
     "generate_answer",
     "rewrite_query", 
     "is_popup_store_question",
+    "cohere_rerank_only"
 ]

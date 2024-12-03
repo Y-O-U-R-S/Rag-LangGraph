@@ -29,7 +29,7 @@ def setup_routes(app):
             print("Received Data -> ID:", user_id, "Message:", user_message)
 
             # Chat 응답 생성
-            response = f"{user_message}"
+            response = generate_chat(user_message)
             return jsonify({"id": user_id, "response": response})
 
         except Exception as e:

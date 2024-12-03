@@ -28,12 +28,6 @@ def convert_to_documents(data):
             documents.append(document)
     return documents
 
-
-def load_txt_file(file_path):
-    loader = TextLoader(file_path)
-    documents = loader.load()
-    return documents
-
 def load_documents_from_folder(folder_path: str) -> List[Document]:
     """
     폴더 내 모든 텍스트 파일을 로드하여 Document 객체 리스트를 반환하며,

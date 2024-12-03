@@ -5,7 +5,7 @@ CHUNK_SIZE = 300           # 텍스트 청크 크기
 CHUNK_OVERLAP = 20
 
 # 검색 관련
-TOP_K_RESULTS = 3         # 검색 시 반환할 문서 수
+TOP_K_RESULTS = 10         # 검색 시 반환할 문서 수
 FAISS_INDEX_TYPE = "Flat"  # FAISS 인덱스 유형
 
 # 경로 설정

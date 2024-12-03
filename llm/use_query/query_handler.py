@@ -72,7 +72,7 @@ hallucination_prompt_template = PromptTemplate(
 {generation}
 
 평가 기준:
-1. 생성된 답변이 제공된 문서에서 정확히 유래했는 경우 "yes"라고만 답하십시오.
+1. 생성된 답변이 제공된 문서에서 유래했는 경우 "yes"라고만 답하십시오.
 2. 생성된 답변에 제공된 문서에 없는 내용이 포함되거나, 잘못된 정보가 포함된 경우 "no"라고만 답하십시오.
 3. 어떠한 경우에도 추가적인 설명 없이 "yes" 또는 "no"로만 답변하십시오.
 4. 응답이 "yes" 또는 "no" 외의 내용을 포함하면 평가가 무효 처리됩니다.
@@ -83,13 +83,21 @@ hallucination_prompt_template = PromptTemplate(
 
 popup_store_classification_template = PromptTemplate(
     input_variables=["query"],
-    template="""
-    일단 yes라고 답변하세요.
+    template=
+    """
+    당신은 질문의 주제를 분석하여 팝업스토어 혹은 온양 혹은 온당 혹은 이벤트 혹은 점검 와 관련된 질문인지 판단하는 AI입니다.
+    -한 가지라도 해당하면 yes, 전부 해당하지 않을 경우에만 no라고 말하면 됩니다.
+    질문이 팝업스토어 대여, 운영, 예약, 신청 방법 등 팝업스토어와 관련된 주제라면 "yes"라고 답변하세요.
+    -한 가지라도 해당하면 yes, 전부 해당하지 않을 경우에만 no라고 말하면 됩니다.
+    질문이 팝업스토어와 전혀 관련이 없는 주제라면 "no"라고 답변하세요.
+    추가적인 설명 없이 "yes" 또는 "no"라고만 답변하세요.
+    -응답이 "yes" 또는 "no" 외의 내용을 포함하면 평가가 무효 처리됩니다.
 
     질문:
     {query}
 
     답변:"""
+    
 )
 
 def rewrite_query(original_query: str, llm) -> str:
@@ -103,9 +111,12 @@ def rewrite_query(original_query: str, llm) -> str:
     Returns:
         str: 재작성된 쿼리
     """
-    query_rewriter = query_rewrite_template | llm
-    rewritten_query = query_rewriter.invoke({"original_query": original_query}).content
-    return rewritten_query
+    try:
+        query_rewriter = query_rewrite_template | llm
+        rewritten_query = query_rewriter.invoke({"original_query": original_query}).content
+        return rewritten_query
+    except Exception as e:
+        raise ValueError(f"Error rewriting query: {e}")
 
 def generate_answer(search_results: list, rewritten_query: str, llm) -> str:
     """
@@ -119,13 +130,16 @@ def generate_answer(search_results: list, rewritten_query: str, llm) -> str:
     Returns:
         str: 생성된 답변
     """
-    context = json.dumps([{"text": doc.page_content} for doc in search_results])
-    answer_generator = answer_generation_template | llm
-    generated_answer = answer_generator.invoke({
-        "context": context,
-        "rewritten_query": rewritten_query
-    }).content
-    return generated_answer
+    try:
+        context = json.dumps([{"text": doc.page_content} for doc in search_results])
+        answer_generator = answer_generation_template | llm
+        generated_answer = answer_generator.invoke({
+            "context": context,
+            "rewritten_query": rewritten_query
+        }).content
+        return generated_answer
+    except Exception as e:
+        raise ValueError(f"Error generating answer: {e}")
 
 def check_hallucination(search_results: list, generated_answer: str, llm) -> str:
     """
@@ -139,17 +153,20 @@ def check_hallucination(search_results: list, generated_answer: str, llm) -> str
     Returns:
         str: 할루시네이션 평가 결과 ("yes" 또는 "no")
     """
-    context = json.dumps([{"text": doc.page_content} for doc in search_results])
-    hallucination_checker = hallucination_prompt_template | llm
-    hallucination_response = hallucination_checker.invoke({
-        "documents": context,
-        "generation": generated_answer
-    }).content.strip().lower()
+    try:
+        context = json.dumps([{"text": doc.page_content} for doc in search_results])
+        hallucination_checker = hallucination_prompt_template | llm
+        hallucination_response = hallucination_checker.invoke({
+            "documents": context,
+            "generation": generated_answer
+        }).content.strip().lower()
 
-    if hallucination_response not in ["yes", "no"]:
-        raise ValueError(f"Unexpected response from hallucination checker: {hallucination_response}")
-    
-    return hallucination_response
+        if hallucination_response not in ["yes", "no"]:
+            raise ValueError(f"Unexpected response from hallucination checker: {hallucination_response}")
+
+        return hallucination_response
+    except Exception as e:
+        raise ValueError(f"Error checking hallucination: {e}")
 
 def is_popup_store_question(query: str, llm) -> str:
     """
@@ -162,17 +179,20 @@ def is_popup_store_question(query: str, llm) -> str:
     Returns:
         str: "yes" 또는 "no" (팝업스토어 관련 여부)
     """
-    # 팝업스토어 판단 프롬프트와 LLM 결합
-    classifier = popup_store_classification_template | llm
+    try:
+        # 팝업스토어 판단 프롬프트와 LLM 결합
+        classifier = popup_store_classification_template | llm
 
-    # LLM을 통해 판단 수행
-    classification_response = classifier.invoke({"query": query}).content.strip().lower()
+        # LLM을 통해 판단 수행
+        classification_response = classifier.invoke({"query": query}).content.strip().lower()
 
-    # 결과 검증
-    if classification_response not in ["yes", "no"]:
-        raise ValueError(f"Unexpected response from classifier: {classification_response}")
+        # 결과 검증
+        if classification_response not in ["yes", "no"]:
+            raise ValueError(f"Unexpected response from classifier: {classification_response}")
 
-    return classification_response
+        return classification_response
+    except Exception as e:
+        raise ValueError(f"Error classifying query: {e}")
 
 def generate_response(search_results, query, llm):
     """
@@ -186,16 +206,20 @@ def generate_response(search_results, query, llm):
     Returns:
         tuple: (is_hallucination: bool, generated_answer: str, hallucination_response: str)
     """
-    # Step 1: 쿼리 재작성
-    rewritten_query = rewrite_query(query, llm)
-    print(rewritten_query)
-    # Step 2: 답변 생성
-    generated_answer = generate_answer(search_results, rewritten_query, llm)
+    try:
+        # Step 1: 쿼리 재작성
+        rewritten_query = rewrite_query(query, llm)
 
-    # Step 3: 할루시네이션 체크
-    hallucination_response = check_hallucination(search_results, generated_answer, llm)
+        # Step 2: 답변 생성
+        generated_answer = generate_answer(search_results, rewritten_query, llm)
 
-    # 할루시네이션 결과를 Boolean 값으로 변환
-    is_hallucination = hallucination_response == "yes"
+        # Step 3: 할루시네이션 체크
+        hallucination_response = check_hallucination(search_results, generated_answer, llm)
 
-    return is_hallucination, generated_answer, hallucination_response
+        # 할루시네이션 결과를 Boolean 값으로 변환
+        is_hallucination = hallucination_response == "no"
+
+        return is_hallucination, generated_answer, hallucination_response
+
+    except Exception as e:
+        raise ValueError(f"Error in generate_response: {e}")

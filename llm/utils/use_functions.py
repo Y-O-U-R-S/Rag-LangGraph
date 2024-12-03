@@ -36,12 +36,6 @@ def text_wrap(text, width=120):
 def format_docs(documents):
     """
     문서 목록을 하나의 문자열로 포맷팅합니다.
-
-    Args:
-    documents (list): Document 객체 리스트
-
-    Returns:
-    str: 포맷된 문자열, 각 문서는 <facts> 태그 안에 포함됨
     """
     formatted_docs = "\n".join([f"<facts>{doc.page_content}</facts>" for doc in documents])
     return formatted_docs
