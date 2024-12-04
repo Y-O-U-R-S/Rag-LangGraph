@@ -45,6 +45,9 @@ To set up the environment using Conda, follow these steps:
 
 6. Set up PostgreSQL:  
    Configure your PostgreSQL database to send notifications.
+
+7. Run the application:
+     python app.py
    
 # **LangChain 기반 문서 검색 및 Q&A 시스템**
 
