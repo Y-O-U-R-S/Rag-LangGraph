@@ -12,14 +12,16 @@ This project leverages **LangChain** to build a document-based search and Q&A sy
 - **Document Processing**  
   Uses TikToken for token-based input control and semantic chunking to differentiate text meaningfully.
 
+- **Cohere API-Based Re-Ranking**  
+  Utilizes Cohere's API to re-rank search results for enhanced relevance and accuracy.
+  
 - **Query Workflow**  
   - Rewrites user queries for improved search efficiency.
   - Classifies whether to respond to the question or not based on its relevance.
   - Generates accurate responses based strictly on retrieved content.
   - Verifies answers to prevent hallucination or misinformation.
 
-- **Cohere API-Based Re-Ranking**  
-  Utilizes Cohere's API to re-rank search results for enhanced relevance and accuracy.
+
 
 ## **Environment Setup and Installation**
 1. Clone the repository:
@@ -50,12 +52,11 @@ This project leverages **LangChain** to build a document-based search and Q&A sy
 - **문서 처리**  
   TikToken을 사용하여 입력 크기를 제어하고, 의미를 기반으로 텍스트를 구분하는 시맨틱 청킹을 구현합니다.
 
+- **Cohere API 기반 리랭크**  
+  Cohere API를 활용하여 검색 결과를 재정렬하고, 더욱 관련성 높은 문서를 우선적으로 제공합니다.
+
 - **쿼리 워크플로**  
   - 사용자 질문을 검색 효율을 높이도록 재작성합니다.
   - 질문에 대답할지 여부를 분류합니다.
   - 검색된 콘텐츠를 기반으로 정확한 답변을 생성합니다.
   - 생성된 답변이 근거 없는 정보나 할루시네이션을 포함하지 않도록 검증합니다.
-
-
-- **Cohere API 기반 리랭크**  
-  Cohere API를 활용하여 검색 결과를 재정렬하고, 더욱 관련성 높은 문서를 우선적으로 제공합니다.
