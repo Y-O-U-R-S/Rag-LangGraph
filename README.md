@@ -14,7 +14,7 @@ This project leverages **LangChain** to build a document-based search and Q&A sy
 
 - **Query Workflow**  
   - Rewrites user queries for improved search efficiency.
-  - Classifies related questions for better context understanding.
+  - Classifies whether to respond to the question or not based on its relevance.
   - Generates accurate responses based strictly on retrieved content.
   - Verifies answers to prevent hallucination or misinformation.
 
@@ -24,7 +24,7 @@ This project leverages **LangChain** to build a document-based search and Q&A sy
 ## **Environment Setup and Installation**
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/langchain-qa-system.git
+   git clone https://github.com/Y-O-U-R-S/langchain-rag.git
    cd langchain-qa-system
 2. Set up a Python environment:
    python -m venv env
@@ -52,9 +52,10 @@ This project leverages **LangChain** to build a document-based search and Q&A sy
 
 - **쿼리 워크플로**  
   - 사용자 질문을 검색 효율을 높이도록 재작성합니다.
-  - 관련 질문을 분류하여 문맥을 더욱 잘 이해합니다.
+  - 질문에 대답할지 여부를 분류합니다.
   - 검색된 콘텐츠를 기반으로 정확한 답변을 생성합니다.
   - 생성된 답변이 근거 없는 정보나 할루시네이션을 포함하지 않도록 검증합니다.
+
 
 - **Cohere API 기반 리랭크**  
   Cohere API를 활용하여 검색 결과를 재정렬하고, 더욱 관련성 높은 문서를 우선적으로 제공합니다.
