@@ -168,7 +168,7 @@ def cohere_rerank(documents: List[Document], query: str, top_n: int = TOP_K_RESU
             (documents[result.index], result.relevance_score)
             for result in response.results
         ]
-
+        
         # 점수를 기준으로 정렬
         ranked_docs.sort(key=lambda x: x[1], reverse=True)
 
@@ -180,16 +180,22 @@ def cohere_rerank(documents: List[Document], query: str, top_n: int = TOP_K_RESU
         return None
 
 
-def cohere_rerank_only(query: str, documents: List[Document], top_n: int = TOP_K_RESULTS) -> List[Document]:
+def cohere_rerank_only(query: str, vectorstore, top_n: int = TOP_K_RESULTS) -> List[Document]:
     """
-    FAISS 검색 없이 바로 Cohere로 문서를 재정렬하는 함수.
+    Vectorstore에 저장된 모든 문서를 Cohere로 재정렬하는 함수.
     :param query: 검색 질의(Query).
-    :param documents: 문서 리스트 (Document 객체).
+    :param vectorstore: FAISS 벡터스토어 객체.
     :param top_n: 반환할 문서 개수 (기본값: 3).
     :return: 재정렬된 문서 리스트.
     """
     try:
-        # Cohere로 문서를 재정렬
+        # Step 1: Vectorstore에서 모든 문서 가져오기
+        documents = list(vectorstore.docstore._dict.values())  # InMemoryDocstore의 문서 접근 방식
+        if not documents:
+            print("Vectorstore에 문서가 없습니다.")
+            return []
+
+        # Step 2: Cohere로 문서 재정렬
         reranked_results = cohere_rerank(documents, query, top_n=top_n)
 
         # 재정렬 결과가 None인 경우 빈 리스트 반환

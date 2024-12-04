@@ -5,7 +5,7 @@ CHUNK_SIZE = 300           # 텍스트 청크 크기
 CHUNK_OVERLAP = 20
 
 # 검색 관련
-TOP_K_RESULTS = 10         # 검색 시 반환할 문서 수
+TOP_K_RESULTS = 5        # 검색 시 반환할 문서 수
 FAISS_INDEX_TYPE = "Flat"  # FAISS 인덱스 유형
 
 # 경로 설정
@@ -18,4 +18,4 @@ TEMPERATURE = 0         # LLM 생성 온도
 MAX_TOKENS = 4000           # LLM 응답 최대 토큰 수
 
 
-FAISS_PATH = "embedding/faiss_index.faiss"
+FAISS_PATH = "llm/embedding/faiss_index"

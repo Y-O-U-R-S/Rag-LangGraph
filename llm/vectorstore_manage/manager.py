@@ -7,26 +7,30 @@ from langchain.schema import Document
 from config import FAISS_PATH, TOP_K_RESULTS
 import faiss
 import os
-def check_vectorstore(FAISS_PATH=FAISS_PATH, metadatas=None):
+import os
+
+def check_vectorstore(FAISS_PATH="embedding/faiss_index", metadatas=None):
     """
-    벡터스토어가 없으면 빈 벡터스토어를 생성하고, 이미 존재하면 로드합니다.
+    벡터스토어가 없으면 새로 생성하고, 이미 존재하면 로드합니다.
     """
     try:
-        # 디렉토리 존재 여부 확인
-        directory = os.path.dirname(FAISS_PATH)
-        if not os.path.exists(directory):
-            os.makedirs(directory)  # 디렉토리 생성
+        # 디렉토리 경로 확인 및 생성
+        if not os.path.exists(FAISS_PATH):
+            os.makedirs(FAISS_PATH)
+            print(f"디렉토리가 존재하지 않아 생성했습니다: {FAISS_PATH}")
 
-        # 이미 파일이 존재하는지 확인
-        if os.path.exists(FAISS_PATH):
-            return load_faiss_index(FAISS_PATH)  # 이미 존재하는 벡터스토어 로드
+        # 벡터스토어 로드
+        if os.path.exists(os.path.join(FAISS_PATH, "index.faiss")):  # FAISS 저장 구조 확인
+            print(f"기존 벡터스토어 로드 중: {FAISS_PATH}")
+            return load_faiss_index(FAISS_PATH)  # 기존 벡터스토어 로드
         else:
-            # 빈 벡터스토어가 없으면 1값 벡터로 초기화 후 create_vectorstore_text 호출
+            # 벡터스토어가 없을 경우 새로 생성
             print(f"벡터스토어가 존재하지 않음. 새로 생성합니다: {FAISS_PATH}")
-            return create_vectorstore_text("g", metadatas, index_path=FAISS_PATH)  # 텍스트를 빈 리스트로 넘겨 1값 벡터로 생성
+            return create_vectorstore_text(["g"], metadatas, index_path=FAISS_PATH)
 
     except Exception as e:
         print(f"벡터스토어 생성 또는 로드 중 오류 발생: {e}")
+
 
 def create_vectorstore_text(texts, metadatas=None, index_path=FAISS_PATH):
     """
@@ -61,7 +65,7 @@ def build_faiss_index(documents, faiss_path: str):
         vectorstore = FAISS.from_documents(document_objects, OpenAIEmbeddings())
         vectorstore.save_local(faiss_path)
         return vectorstore
-    except Exception as e:
+    except Exception as e:  
         print(f"Error building FAISS index: {e}")
 
 
@@ -78,11 +82,13 @@ def add_to_vectorstore(documents, index_path=FAISS_PATH):
     기존 벡터 스토어에 Document 객체를 추가하고 업데이트.
     """
     try:
+        print(documents)
         embeddings = OpenAIEmbeddings()
         vectorstore = FAISS.load_local(index_path, embeddings, allow_dangerous_deserialization=True)
         texts = [doc.page_content for doc in documents]
         metadatas = [doc.metadata for doc in documents]
         vectorstore.add_texts(texts, metadatas=metadatas)
         vectorstore.save_local(index_path)
+        print(1)
     except Exception as e:
         print(f"Error updating vectorstore: {e}")

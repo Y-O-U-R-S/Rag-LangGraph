@@ -1,5 +1,5 @@
 from flask import request, jsonify
-from app.services.chat_service import generate_chat
+from app.services.chat_service import generate_chat, generate_chat2
 import traceback
 import json
 
@@ -29,7 +29,7 @@ def setup_routes(app):
             print("Received Data -> ID:", user_id, "Message:", user_message)
 
             # Chat 응답 생성
-            response = generate_chat(user_message)
+            response = generate_chat2(user_message)
             return jsonify({"id": user_id, "response": response})
 
         except Exception as e:

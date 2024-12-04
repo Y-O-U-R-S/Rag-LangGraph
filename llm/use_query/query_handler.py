@@ -2,32 +2,6 @@ from langchain.prompts import PromptTemplate
 
 import json
 
-"""당신은 팝업스토어 대여와 관련된 공지 사항을 바탕으로 질문에 정확하고 신뢰할 수 있는 답변을 제공하는 AI 어시스턴트입니다.
-    사용자가 제출한 질문과 주어진 공지 내용을 바탕으로 반드시 정확한 정보만으로 답변을 작성하세요. 
-    만약 질문에 대한 정보가 공지 내용에 없다면, 이를 명확히 알리고 추가적인 정보를 제공하지 마세요.
-
-    공지 내용:
-    {context}
-
-    질문:
-    {rewritten_query}
-
-    답변:"""
-
-"""
-    당신은 질문의 주제를 분석하여 팝업스토어와 관련된 질문인지 판단하는 AI입니다.
-
-    질문이 팝업스토어 대여, 운영, 예약, 신청 방법 등 팝업스토어와 관련된 주제라면 "yes"라고 답변하세요.
-    질문이 팝업스토어와 전혀 관련이 없는 주제라면 "no"라고 답변하세요.
-    추가적인 설명 없이 "yes" 또는 "no"라고만 답변하세요.
-
-    질문:
-    {query}
-
-    답변:"""
-
-
-
 # LLM 초기화
 
 query_rewrite_template = PromptTemplate(
@@ -40,17 +14,15 @@ query_rewrite_template = PromptTemplate(
     원본 질문: {original_query}
     재작성된 질문:"""
 )
-
+#당신은 팝업스토어 대여와 관련된 공지 사항을 바탕으로 질문에 정확하고 신뢰할 수 있는 답변을 제공하는 AI 어시스턴트입니다.
 answer_generation_template = PromptTemplate(
     input_variables=["context", "rewritten_query"],
-    template="""당신은 질문에 대답해주는 챗봇입니다. 
-    전달해주는 내용만을 기반으로 대답하세요.
-    반드시 진실만을 대답하세요.
-    만약 질문이 너무 광범위하거나 명확하지 않다면, 더 구체적인 질문을 요청하세요.
-    없는 내용을 전달하면 절대로 안됩니다.
-    단어를 꼼꼼히 검토해서 정확히 대답하세요.
+    template="""
+    사용자가 제출한 질문과 context 내용을 바탕으로 가능한 한 정확하고 간결하게 답변을 작성하세요.
+    만약 질문에 대한 정보가 context에 명확히 없다면, 이를 알리고 추가적인 정보를 제공하지 마세요.
+    그러나 context에 있는 정보를 최대한 활용하여 답변하세요.
 
-    내용:
+    context:
     {context}
 
     질문:
@@ -81,6 +53,24 @@ hallucination_prompt_template = PromptTemplate(
 """
 )
 
+popup_store_verification_template = PromptTemplate(
+    input_variables=["context", "query"],
+    template=
+    """
+    후하게 판단하세요~~
+    입력된 context와 query가 조금이라도 관련이 있다면 yes,
+    전혀전혀 아예 관계가 없다면 no라고 답변하세요.
+
+    context:
+    {context}
+
+    질문:
+    {query}
+
+    답변:
+    """
+)
+
 popup_store_classification_template = PromptTemplate(
     input_variables=["query"],
     template=
@@ -97,7 +87,6 @@ popup_store_classification_template = PromptTemplate(
     {query}
 
     답변:"""
-    
 )
 
 def rewrite_query(original_query: str, llm) -> str:
@@ -168,31 +157,35 @@ def check_hallucination(search_results: list, generated_answer: str, llm) -> str
     except Exception as e:
         raise ValueError(f"Error checking hallucination: {e}")
 
-def is_popup_store_question(query: str, llm) -> str:
+def is_query_in_reranked_results(search_results: list, query: str, llm) -> str:
     """
-    입력된 질문이 팝업스토어와 관련된 질문인지 판단합니다.
+    리랭크된 검색 결과와 쿼리를 기반으로 팝업스토어와 관련된 질문인지 판단합니다.
 
     Args:
+        search_results (list): 리랭크된 문서 리스트
         query (str): 사용자 입력 질문
         llm (ChatOpenAI): LangChain LLM 객체
 
     Returns:
-        str: "yes" 또는 "no" (팝업스토어 관련 여부)
+        str: "yes" 또는 "no" (결과 포함 여부)
     """
     try:
-        # 팝업스토어 판단 프롬프트와 LLM 결합
-        classifier = popup_store_classification_template | llm
+        # 검색 결과에서 문서 내용 추출
+        context = json.dumps([{"text": doc.page_content} for doc in search_results])
 
-        # LLM을 통해 판단 수행
-        classification_response = classifier.invoke({"query": query}).content.strip().lower()
+        # LLM과 프롬프트 결합
+        verifier = popup_store_verification_template | llm
+
+        # LLM 호출
+        verification_response = verifier.invoke({"context": context, "query": query}).content.strip().lower()
 
         # 결과 검증
-        if classification_response not in ["yes", "no"]:
-            raise ValueError(f"Unexpected response from classifier: {classification_response}")
+        if verification_response not in ["yes", "no"]:
+            raise ValueError(f"Unexpected response from verifier: {verification_response}")
 
-        return classification_response
+        return verification_response
     except Exception as e:
-        raise ValueError(f"Error classifying query: {e}")
+        raise ValueError(f"Error verifying query in results: {e}")
 
 def generate_response(search_results, query, llm):
     """
@@ -223,3 +216,29 @@ def generate_response(search_results, query, llm):
 
     except Exception as e:
         raise ValueError(f"Error in generate_response: {e}")
+
+def is_popup_store_question(query: str, llm) -> str:
+    """
+    입력된 질문이 팝업스토어와 관련된 질문인지 판단합니다.
+
+    Args:
+        query (str): 사용자 입력 질문
+        llm (ChatOpenAI): LangChain LLM 객체
+
+    Returns:
+        str: "yes" 또는 "no" (팝업스토어 관련 여부)
+    """
+    try:
+        # 팝업스토어 판단 프롬프트와 LLM 결합
+        classifier = popup_store_classification_template | llm
+
+        # LLM을 통해 판단 수행
+        classification_response = classifier.invoke({"query": query}).content.strip().lower()
+
+        # 결과 검증
+        if classification_response not in ["yes", "no"]:
+            raise ValueError(f"Unexpected response from classifier: {classification_response}")
+
+        return classification_response
+    except Exception as e:
+        raise ValueError(f"Error classifying query: {e}")
