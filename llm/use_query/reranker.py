@@ -171,7 +171,6 @@ def cohere_rerank(documents: List[Document], query: str, top_n: int = TOP_K_RESU
         
         # 점수를 기준으로 정렬
         ranked_docs.sort(key=lambda x: x[1], reverse=True)
-
         # 반환할 문서 개수 제한
         return [doc for doc, _ in ranked_docs[:top_n]]
     except Exception as e:
@@ -207,3 +206,4 @@ def cohere_rerank_only(query: str, vectorstore, top_n: int = TOP_K_RESULTS) -> L
         # 예외 발생 시 오류 출력 및 빈 리스트 반환
         print(f"Error during Cohere rerank: {e}")
         return []
+    

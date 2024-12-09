@@ -59,7 +59,7 @@ def process_notice_data(connection):
                 file_content=documents,
                 chunk_size=CHUNK_SIZE,
                 chunk_overlap=CHUNK_OVERLAP,
-                use_semantic=True,
+                use_semantic=False,
             )
         except Exception as e:
             print(f"Error processing documents: {e}")

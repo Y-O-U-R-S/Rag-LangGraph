@@ -1,127 +1,55 @@
-import threading
-from langchain.chains import ConversationChain
-from langchain_openai import ChatOpenAI
-from typing import List
-from use_query import rewrite_query, generate_answer, check_hallucination, is_popup_store_question, is_query_in_reranked_results, search_and_cohere_rerank, cohere_rerank_only
-from vectorstore_manage import load_faiss_index
-from utils import preprocess_spacing_and_whitespace, format_docs
-from config import DEFAULT_LLM_MODEL, TEMPERATURE, FAISS_PATH, TOP_K_RESULTS
+from langgraph.graph import StateGraph, START, END
+from t_langgraph import update_contexts, check_groundedness, update_answer, update_feedback, update_query
+from config import MyState, CONFIDENCE_SCORE
+from langchain_core.runnables import RunnableConfig
 
-# LangChain 초기화
-llm = ChatOpenAI(model=DEFAULT_LLM_MODEL, temperature=TEMPERATURE)
+# 간단한 메모리 캐시(딕셔너리)
 
+def low_score_condition(state: MyState):
+    query_evaluated = state.get('query_evaluated', 0.0)
+    try:
+        score = float(query_evaluated)
+        return 'update_query' if score <= CONFIDENCE_SCORE  else END
+    except (ValueError, TypeError):
+        return END
 
-def generate_chat(user_message: str) -> str:
-    """
-    사용자 메시지를 받아서 RAG 워크플로를 통해 응답을 생성하는 함수.
+def graph_chat(query: str):
 
-    Args:
-        user_message (str): 사용자 메시지.
+    # 초기 상태 설정
+    initial_state = MyState(
+        context=[],                 
+        answer=[],                  
+        question=query,             
+        query_evaluated=None,       
+        check_evaluated=None        
+    )
+    config = RunnableConfig(
+        recursion_limit=16
+    )
 
-    Returns:
-        str: 최종 생성된 응답.
-    """
+    graph = StateGraph(MyState)
+    graph.add_node("update_context", update_contexts)
+    graph.add_node("update_feedback", update_feedback)
+    graph.add_node("update_answer", update_answer)
+    graph.add_node("update_query", update_query)
 
-    query = preprocess_spacing_and_whitespace(user_message)
-    # 스레드 결과 저장용 변수
-    rewritten_query = None
-    is_popup_related = None
+    graph.add_edge(START, "update_context")
+    graph.add_edge("update_context", "update_answer")
+    graph.add_edge("update_answer", "update_feedback")
 
-    def rewrite_query_thread():
-        nonlocal rewritten_query
-        rewritten_query = rewrite_query(query, llm)
+    graph.add_conditional_edges("update_feedback", low_score_condition)
+    graph.add_edge("update_query", "update_context")
+    graph.add_edge("update_feedback", END)
 
-    def classify_popup_thread():
-        nonlocal is_popup_related
-        is_popup_related = is_popup_store_question(query, llm)
-    
-    # 스레드 생성
-    rewrite_thread = threading.Thread(target=rewrite_query_thread)
-    classify_thread = threading.Thread(target=classify_popup_thread)
+    try:
+        app = graph.compile()
+        final_state = app.invoke(initial_state, config=config)
+        final_answer = final_state['answer'] if final_state['answer'] else "No answer generated"
 
-    # 스레드 시작
-    rewrite_thread.start()
-    classify_thread.start()
+        score = final_state.get('query_evaluated', None)
 
-    # 스레드 완료 대기
-    rewrite_thread.join()
-    classify_thread.join()
+        return final_answer, score
 
-    # 팝업스토어 관련 여부 판단
-    if is_popup_related == "no":
-        return "팝업스토어와 관련된 질문을 해주세요."
-    
-    # 벡터스토어 로드
-    vectorstore = load_faiss_index(FAISS_PATH)
-
-    # 팝업스토어 질문일 경우 RAG 워크플로 진행
-    # Step 1: Cohere를 사용한 Rerank
-    reranked_results = cohere_rerank_only(query, vectorstore, TOP_K_RESULTS)
-    print(reranked_results)
-    # Step 2: 답변 생성
-    generated_answer = generate_answer(reranked_results, rewritten_query, llm)
-
-    # Step 3: 할루시네이션 검사
-    hallucination_result = check_hallucination(reranked_results, generated_answer, llm)
-    print(hallucination_result)
-    # Step 4: 응답 구성
-    if hallucination_result == "no":
-        generated_answer += "\n\n※ 이 답변은 정확하지 않을 수 있습니다."
-
-    return generated_answer
-
-def generate_chat2(user_message: str) -> str:
-    """
-    사용자 메시지를 받아서 RAG 워크플로를 통해 응답을 생성하는 함수.
-
-    Args:
-        user_message (str): 사용자 메시지.
-
-    Returns:
-        str: 최종 생성된 응답.
-    """
-
-    query = preprocess_spacing_and_whitespace(user_message)
-
-    # 스레드 결과 저장용 변수
-    rewritten_query = None
-    is_related = None
-    generated_answer = None
-
-    # Step 1: 쿼리 재작성
-    rewritten_query = rewrite_query(query, llm)
-
-    # Step 2: 재작성된 쿼리를 기반으로 리랭크
-    vectorstore = load_faiss_index(FAISS_PATH)
-    reranked_results = cohere_rerank_only(rewritten_query, vectorstore, TOP_K_RESULTS)
-    
-    # Step 3: 병렬로 generate와 is_query_in_reranked_results 실행
-    def classify_relevance_thread():
-        nonlocal is_related
-        is_related = is_query_in_reranked_results(reranked_results, query, llm)
-
-    def generate_answer_thread():
-        nonlocal generated_answer
-        generated_answer = generate_answer(reranked_results, rewritten_query, llm)
-
-    relevance_thread = threading.Thread(target=classify_relevance_thread)
-    generate_thread = threading.Thread(target=generate_answer_thread)
-
-    relevance_thread.start()
-    generate_thread.start()
-
-    relevance_thread.join()
-    generate_thread.join()
-
-    # Step 4: 관련성 판단
-    if is_related == "no":
-        return "팝업스토어와 관련된 질문을 해주세요."
-
-    # Step 5: 할루시네이션 검사
-    hallucination_result = check_hallucination(reranked_results, generated_answer, llm)
-
-    # Step 6: 응답 구성
-    if hallucination_result == "no":
-        generated_answer += "\n\n※ 이 답변은 정확하지 않을 수 있습니다."
-
-    return generated_answer
+    except Exception as e:
+        print(f"Graph execution error: {e}")
+        return f"An error occurred: {e}"
