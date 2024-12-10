@@ -13,7 +13,7 @@ This project leverages LangGraph to build a document-based search and Q&A system
 - **Document Processing**
   Uses TikToken for token-based input control and semantic chunking to differentiate text meaningfully.
   
-- **Cashin**
+- **Cashing**
   For previously high-confidence answers, they are pre-cached to provide quick responses.
   
 - **Query Workflow**
@@ -67,7 +67,7 @@ To set up the environment using Conda, follow these steps:
 7. Run the application:
      python app.py
    
-**LangGraph 기반 문서 검색 및 Q&A 시스템**
+## **LangGraph 기반 문서 검색 및 Q&A 시스템**
 이 프로젝트는 LangGraph를 활용하여 문서 기반 검색 및 Q&A 시스템을 구축합니다. 효율적인 문서 검색, LLM 기반 답변 생성, 할루시네이션 검증, 실시간 데이터베이스 동기화를 지원합니다.
 
 **주요 기능**
@@ -83,7 +83,7 @@ To set up the environment using Conda, follow these steps:
 - **Cohere API 기반 리랭크**
   Cohere API를 활용하여 검색 결과를 재정렬하고, 더욱 관련성 높은 문서를 우선적으로 제공합니다.
   
--**캐싱**
+- **캐싱**
   이전의 신뢰도 높은 대답에 대해서는 미리 캐싱하여 빠르게 대답합니다.
   
 - **Query Workflow**
