@@ -1,8 +1,8 @@
-#** LangGraph-Based Document Search and Q&A System**
+#**LangGraph-Based Document Search and Q&A System**
 
 This project leverages LangGraph to build a document-based search and Q&A system. It supports efficient document retrieval, LLM-driven response generation, hallucination verification, and real-time database synchronization.
 
-##** Features**
+##**Features**
 
 - **PostgreSQL Integration**
   Listens to PostgreSQL notifications and retrieves updated values automatically. Ensures real-time synchronization with the database.
