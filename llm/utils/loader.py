@@ -1,13 +1,7 @@
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.document_loaders import TextLoader
 from pdfminer.high_level import extract_text
-from .use_functions import replace_t_with_space
-from .chunker import process_documents
 from langchain.schema import Document
 from typing import List
 import os
-from config import CHUNK_SIZE, CHUNK_OVERLAP, FAISS_PATH
 
 def convert_to_documents(data):
     """

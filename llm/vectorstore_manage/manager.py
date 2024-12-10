@@ -1,11 +1,7 @@
 from langchain_community.vectorstores import FAISS
 from langchain_openai.embeddings import OpenAIEmbeddings
-from utils import replace_t_with_space
-from typing import List
-from langchain.vectorstores import VectorStore
 from langchain.schema import Document
-from config import FAISS_PATH, TOP_K_RESULTS
-import faiss
+from config import FAISS_PATH
 import os
 import os
 
@@ -82,13 +78,11 @@ def add_to_vectorstore(documents, index_path=FAISS_PATH):
     기존 벡터 스토어에 Document 객체를 추가하고 업데이트.
     """
     try:
-        print(documents)
         embeddings = OpenAIEmbeddings()
         vectorstore = FAISS.load_local(index_path, embeddings, allow_dangerous_deserialization=True)
         texts = [doc.page_content for doc in documents]
         metadatas = [doc.metadata for doc in documents]
         vectorstore.add_texts(texts, metadatas=metadatas)
         vectorstore.save_local(index_path)
-        print(1)
     except Exception as e:
         print(f"Error updating vectorstore: {e}")

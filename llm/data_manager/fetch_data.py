@@ -1,10 +1,8 @@
 from dotenv import load_dotenv
-import os
 import psycopg2
 from vectorstore_manage import add_to_vectorstore
 from utils import process_documents, convert_to_documents
 from config import CHUNK_SIZE, CHUNK_OVERLAP, FAISS_PATH
-from langchain.schema import Document
 
 def fetch_notice_data(connection):
     """

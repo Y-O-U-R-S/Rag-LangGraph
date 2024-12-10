@@ -11,7 +11,7 @@ def low_score_condition(state: MyState):
     query_evaluated = state.get('query_evaluated', 0.0)
     try:
         score = float(query_evaluated)
-        return 'update_query' if score <= CONFIDENCE_SCORE else END
+        return 'update_query' if score < CONFIDENCE_SCORE else END
     except (ValueError, TypeError):
         return END
 
@@ -76,7 +76,7 @@ def graph_chat(query: str):
     graph.add_edge("filter_contexts", "update_answer")
     graph.add_conditional_edges("update_answer", filter_relevance)
     graph.add_conditional_edges("update_feedback", low_score_condition)
-    graph.add_edge("update_query", "update_context")
+    graph.add_edge("update_query", "update_answer")
     graph.add_edge("update_feedback", END)
 
     # 그래프 실행

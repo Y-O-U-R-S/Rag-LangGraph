@@ -1,10 +1,3 @@
-from typing import List
-from langchain.prompts import (
-    ChatPromptTemplate,
-    FewShotChatMessagePromptTemplate,
-    HumanMessagePromptTemplate,
-    AIMessagePromptTemplate,
-)
 import textwrap
 
 def replace_t(texts):
