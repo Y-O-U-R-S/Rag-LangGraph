@@ -63,25 +63,43 @@ To set up the environment using Conda, follow these steps:
 7. Run the application:
      python app.py
    
-# **LangChain 기반 문서 검색 및 Q&A 시스템**
+**LangGraph 기반 문서 검색 및 Q&A 시스템**
+이 프로젝트는 LangGraph를 활용하여 문서 기반 검색 및 Q&A 시스템을 구축합니다. 효율적인 문서 검색, LLM 기반 답변 생성, 할루시네이션 검증, 실시간 데이터베이스 동기화를 지원합니다.
 
-이 프로젝트는 **LangChain**을 활용하여 문서 기반 검색 및 Q&A 시스템을 구축합니다. 효율적인 문서 검색, LLM 기반 답변 생성, 할루시네이션 검증, 실시간 데이터베이스 동기화를 지원합니다.
-
-## **주요 기능**
-- **PostgreSQL 통합**  
+**주요 기능**
+- **PostgreSQL 통합**
   PostgreSQL 알림을 수신하여 자동으로 최신 데이터를 가져옵니다. 데이터베이스와 실시간 동기화를 보장합니다.
 
-- **벡터 데이터베이스 지원**  
+- **벡터 데이터베이스 지원**
   FAISS를 활용하여 벡터 임베딩을 저장하고 검색합니다. 빠르고 정확한 유사성 기반 문서 검색을 지원합니다.
 
-- **문서 처리**  
+- **문서 처리**
   TikToken을 사용하여 입력 크기를 제어하고, 의미를 기반으로 텍스트를 구분하는 시맨틱 청킹을 구현합니다.
 
-- **Cohere API 기반 리랭크**  
+- **Cohere API 기반 리랭크**
   Cohere API를 활용하여 검색 결과를 재정렬하고, 더욱 관련성 높은 문서를 우선적으로 제공합니다.
 
-- **쿼리 워크플로**  
-  - 사용자 질문을 검색 효율을 높이도록 재작성합니다.
-  - 질문에 대답할지 여부를 분류합니다.
-  - 검색된 콘텐츠를 기반으로 정확한 답변을 생성합니다.
-  - 생성된 답변이 근거 없는 정보나 할루시네이션을 포함하지 않도록 검증합니다.
+- **Query Workflow**
+
+ **Start (__start__)**
+  The process begins with initializing the workflow.
+
+-**Update Contexts (update_contexts)**
+  Relevant contexts are fetched and updated from the PostgreSQL and vector database.
+
+-**Filter Contexts (filter_contexts)**
+  The retrieved contexts are filtered to remove irrelevant data, ensuring only the most relevant information proceeds to the next step.
+
+-**Update Answer (update_answer)**
+  An answer is generated based on the filtered contexts:
+
+  If the question is irrelevant, the workflow directly ends at the __end__ node.
+  If the generated answer has a confidence score below the threshold, the process moves to the update_feedback node.
+-**Update Feedback (update_feedback)**
+  Feedback is gathered, and the query is rewritten based on the feedback. The workflow then transitions to the update_query node.
+
+-**Update Query (update_query)**
+  The rewritten query is used to retrieve new contexts, restarting the flow from the update_contexts node.
+
+-**End (__end__)**
+  The workflow concludes successfully when a high-confidence answer is generated or the question is deemed irrelevant.
