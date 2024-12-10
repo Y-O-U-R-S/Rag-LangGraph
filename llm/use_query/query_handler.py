@@ -1,10 +1,60 @@
 from .prompts import (
     answer_generation_template, 
     feedback_prompt_template,
-    query_rewrite_prompt_template
+    query_rewrite_prompt_template,
+    filter_contexts_prompt,
 )
 import json
-from config import MyState
+from config import MyState , CASH_THRESHOLD
+from typing import List
+
+def filter_contexts_num(state: MyState, llm, question: str) -> List[int]:
+    """
+    주어진 질문을 기반으로 제한 조건을 판단하여 맞지 않는 모든 Document의 인덱스를 반환.
+
+    Args:
+        state (MyState): 현재 상태를 담고 있는 객체.
+        llm (object): LLM 객체.
+        question (str): 질문 내용.
+
+    Returns:
+        List[int]: 제한 조건에 맞지 않는 Document들의 인덱스.
+    """
+    context = state['context']
+    
+    # Document 내용을 포매팅
+    documents_text = "\n".join([f"{i}. {doc.page_content}" for i, doc in enumerate(context)])
+    
+    # Prompt 생성
+    prompt = filter_contexts_prompt.format(
+        question=question,
+        documents=documents_text
+    )
+    
+    # LLM 호출
+    try:
+        response = llm.invoke(prompt)  # invoke를 사용하여 LLM 호출
+        if not response or not response.content:  # 응답이 없을 경우 처리
+            print("No response from LLM.")
+            return []
+
+        response_content = response.content.strip()
+
+        # 응답 형식 확인 및 파싱
+        if "제한 조건에 맞지 않는 Document 인덱스:" in response_content:
+            index_part = response_content.split(":")[1].strip()
+            if index_part.startswith("[") and index_part.endswith("]"):
+                filtered_indexes = eval(index_part)
+                return filtered_indexes
+            else:
+                print("Response format is invalid.")
+        else:
+            print("Expected key phrase not found in response.")
+        
+        return []
+    except Exception as e:
+        print(f"Error in LLM prompt: {e}")
+        return []
 
 def query_rewrite(state: MyState, llm) -> MyState:
     """
@@ -41,41 +91,66 @@ def query_rewrite(state: MyState, llm) -> MyState:
         return state
 
     
-def generate_answer(search_results: str, rewritten_query: str, llm) -> str:
+def generate_answer(state: MyState, llm) -> MyState:
     """
-    검색 결과와 재작성된 쿼리를 기반으로 답변을 생성합니다.
-    
+    검색 결과와 재작성된 쿼리를 기반으로 답변을 생성하고, 관련성 여부와 답변을 상태에 업데이트합니다.
+
     Args:
-        search_results (str): 검색된 문서 문자열
-        rewritten_query (str): 재작성된 사용자 질문
-        llm (ChatOpenAI): LangChain LLM 객체
-    
+        state (MyState): 현재 상태 객체.
+        llm (ChatOpenAI): LangChain LLM 객체.
+
     Returns:
-        str: 생성된 답변
+        MyState: 관련성 여부와 생성된 답변이 업데이트된 상태 객체.
     """
     try:
+        # 상태에서 입력 데이터 가져오기
+        context = state.get('context', '')
+        question = state.get('question', '')
+
         # 답변 생성기 호출
         answer_generator = answer_generation_template | llm
-        generated_answer = answer_generator.invoke({
-            "context": search_results,
-            "rewritten_query": rewritten_query
-        }).content
-        
-        return generated_answer
-    
+        response = answer_generator.invoke({
+            "context": context,
+            "question": question
+        }).content.strip()
+
+        # 응답 파싱
+        parsed_response = eval(response)  # 예: [True, "answer"]
+
+        # 결과 검증
+        if (
+            isinstance(parsed_response, list) and 
+            len(parsed_response) == 2 and 
+            isinstance(parsed_response[0], bool) and 
+            isinstance(parsed_response[1], str)
+        ):
+            if(parsed_response[0] == False):
+                state['query_evaluated'] = CASH_THRESHOLD
+            # 상태 업데이트
+            state['check_relevance'] = parsed_response[0]  # 관련 여부
+            state['answer'] = parsed_response[1]           # 생성된 답변
+        else:
+            raise ValueError("Invalid response format from LLM.")
+
+        return state
     except Exception as e:
-        raise ValueError(f"답변 생성 중 오류 발생: {e}")
+        print(f"Error generating answer: {e}")
+        state['check_relevance'] = None
+        state['answer'] = f"Error generating answer: {e}"
+        return state
+
 
 def generate_feedback(state: MyState, llm) -> MyState:
     """
     생성된 답변을 컨텍스트와 질문에 대해 평가하고, 피드백으로 상태를 업데이트합니다.
 
     매개변수(Args):
-    state (dict): 'context', 'question', 'answer'를 포함하는 상태 객체.
+    state (MyState): 'context', 'question', 'answer'를 포함하는 상태 객체.
     llm (ChatOpenAI): 피드백을 생성하기 위해 사용하는 LangChain LLM 객체.
     feedback_prompt_template (str): 피드백 프롬프트 템플릿.
+
     반환값(Returns):
-    dict: 'reliability_score'와 'feedback'이 추가된 업데이트된 상태 객체.
+    state: 'reliability_score'와 'feedback'이 추가된 업데이트된 상태 객체.
     """
     try:
         # State에서 입력 데이터 가져오기
@@ -113,7 +188,3 @@ def generate_feedback(state: MyState, llm) -> MyState:
         state['query_evaluated'] = None
         state['query_feedback'] = f"Error generating feedback: {e}"
         return state
-
-
-
-

@@ -1,4 +1,4 @@
-from use_query import cohere_rerank_only, generate_answer, generate_feedback, query_rewrite
+from use_query import cohere_rerank_only, generate_answer, generate_feedback, query_rewrite, filter_contexts_num
 from config import FAISS_PATH, TOP_K_RESULTS, llm, MyState
 from dotenv import load_dotenv
 from langchain_upstage import UpstageGroundednessCheck
@@ -33,7 +33,7 @@ def update_contexts_rerank(
     
     :param state: 업데이트할 MyState 객체.
     :param vectorstore: FAISS 벡터스토어 객체.
-    :param top_n: 반환할 문서 개수 (기본값: 3).
+    :param top_n: 반환할 문서 개수.
     :return: context가 업데이트된 MyState 객체.
     """
     try:
@@ -43,7 +43,6 @@ def update_contexts_rerank(
         reranked_results = cohere_rerank_only(query, vectorstore, top_n=top_n)
         # context 업데이트
         if reranked_results:
-            # Document 객체 리스트를 문자열 리스트로 변환
             state["context"] = reranked_results
 
         else:
@@ -52,7 +51,30 @@ def update_contexts_rerank(
     except Exception as e:
         print(f"Error updating context: {e}")
         return state
-    
+
+def filter_contexts(state: MyState) -> MyState:
+    """
+    제한 조건에 맞지 않는 Document를 state['context']에서 제거.
+
+    Args:
+        state (MyState): 현재 상태를 담고 있는 객체.
+
+    Returns:
+        MyState: 필터링된 상태 객체.
+    """
+    try:
+        # 제한 조건에 맞지 않는 인덱스 식별
+        filtered_indexes = filter_contexts_num(state, llm, state['question'])
+        # 인덱스에 해당하는 문서 제거
+        state['context'] = [
+            doc for i, doc in enumerate(state['context']) if i not in filtered_indexes
+        ]
+        return state
+    except Exception as e:
+        print(f"Error filtering context: {e}")
+        return state
+
+
 def update_feedback(state: MyState) -> MyState:
     """
     Chunk와 질문을 통해서 대답의 신뢰도를 판단하기 위한 함수와 연결해주기 위한 함수 
@@ -126,14 +148,9 @@ def update_answer(state: MyState) -> MyState:
         MyState: 답변(string)이 업데이트된 상태 객체
     """
     try:
-        # state에서 query 가져오기
-        query = state.get("question", "")
-        context = state.get("context", "")
+        # 새로운 답변 생성 및 체크
+        state = generate_answer(state, llm)
 
-        # 새로운 답변 생성
-        answer = generate_answer(context, query, llm)
-
-        state['answer'] = answer
         return state
     except Exception as e:
         print(f"Error updating answer: {e}")

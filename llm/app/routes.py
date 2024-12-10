@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from llm.app.services.chat_service import graph_chat
 import json
-from config import DB_PATH
+from config import CASH_THRESHOLD
 from cache_db import init_db, get_cached_response, save_cached_response
 
 def setup_routes(app):
@@ -45,7 +45,7 @@ def setup_routes(app):
             # 점수가 0.9 이상이면 영구적으로 DB에 저장
             try:
                 numeric_score = float(score)
-                if numeric_score >= 0.9:
+                if numeric_score >= CASH_THRESHOLD:
                     save_cached_response(user_message, response)
             except ValueError:
                 # 점수가 숫자가 아닐 경우 무시

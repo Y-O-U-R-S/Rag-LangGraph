@@ -10,7 +10,8 @@ from .constants import (
     MAX_TOKENS,
     FAISS_PATH,
     DB_PATH,
-    CONFIDENCE_SCORE
+    CONFIDENCE_SCORE,
+    CASH_THRESHOLD
 )
 from .models import(
     llm,
@@ -24,6 +25,7 @@ __all__ = [
     "TOP_K_RESULTS",
     "FAISS_INDEX_TYPE",
     "CONFIDENCE_SCORE",
+    "CASH_THRESHOLD",
     "DATA_DIRECTORY",
     "LOG_FILE",
     "DEFAULT_LLM_MODEL",
@@ -31,7 +33,8 @@ __all__ = [
     "MAX_TOKENS",
     "FAISS_PATH",
     "llm", 
-    "MyState"
+    "MyState",
+    
 ]
 
 

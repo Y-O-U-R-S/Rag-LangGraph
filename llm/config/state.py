@@ -10,6 +10,7 @@ class MyState(TypedDict):
     question: str
     query_evaluated: float
     query_feedback: str
+    check_relevance: bool
 """
 class MyState(TypedDict):
     context: Annotated[Sequence[Document], operator.add]
