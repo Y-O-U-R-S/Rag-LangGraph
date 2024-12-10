@@ -1,28 +1,42 @@
-# **LangChain-Based Document Search and Q&A System**
+#** LangGraph-Based Document Search and Q&A System**
 
-This project leverages **LangChain** to build a document-based search and Q&A system. It supports efficient document retrieval, LLM-driven response generation, hallucination verification, and real-time database synchronization.
+This project leverages LangGraph to build a document-based search and Q&A system. It supports efficient document retrieval, LLM-driven response generation, hallucination verification, and real-time database synchronization.
 
-## **Features**
-- **PostgreSQL Integration**  
+##** Features**
+
+- **PostgreSQL Integration**
   Listens to PostgreSQL notifications and retrieves updated values automatically. Ensures real-time synchronization with the database.
 
-- **Vector Database Support**  
+- **Vector Database Support**
   Stores and retrieves embeddings in a vector database (FAISS). Enables fast and accurate similarity-based document retrieval.
 
-- **Document Processing**  
+- **Document Processing**
   Uses TikToken for token-based input control and semantic chunking to differentiate text meaningfully.
 
-- **Cohere API-Based Re-Ranking**  
-  Utilizes Cohere's API to re-rank search results for enhanced relevance and accuracy.
-  
-- **Query Workflow**  
-  - Rewrites user queries for improved search efficiency.
-  - Classifies whether to respond to the question or not based on its relevance.
-  - Generates accurate responses based strictly on retrieved content.
-  - Verifies answers to prevent hallucination or misinformation.
+- **Query Workflow**
 
+ **Start (__start__)**
+  The process begins with initializing the workflow.
 
+-**Update Contexts (update_contexts)**
+  Relevant contexts are fetched and updated from the PostgreSQL and vector database.
 
+-**Filter Contexts (filter_contexts)**
+  The retrieved contexts are filtered to remove irrelevant data, ensuring only the most relevant information proceeds to the next step.
+
+-**Update Answer (update_answer)**
+  An answer is generated based on the filtered contexts:
+
+  If the question is irrelevant, the workflow directly ends at the __end__ node.
+  If the generated answer has a confidence score below the threshold, the process moves to the update_feedback node.
+-**Update Feedback (update_feedback)**
+  Feedback is gathered, and the query is rewritten based on the feedback. The workflow then transitions to the update_query node.
+
+-**Update Query (update_query)**
+  The rewritten query is used to retrieve new contexts, restarting the flow from the update_contexts node.
+
+-**End (__end__)**
+  The workflow concludes successfully when a high-confidence answer is generated or the question is deemed irrelevant.
 
 ## **Environment Setup with Conda**
 
