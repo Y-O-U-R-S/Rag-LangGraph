@@ -15,27 +15,27 @@ This project leverages LangGraph to build a document-based search and Q&A system
 
 - **Query Workflow**
 
- -**Start (__start__)**
+ **Start (__start__)**
   The process begins with initializing the workflow.
 
- -**Update Contexts (update_contexts)**
+ **Update Contexts (update_contexts)**
   Relevant contexts are fetched and updated from the PostgreSQL and vector database.
 
- -**Filter Contexts (filter_contexts)**
+ **Filter Contexts (filter_contexts)**
   The retrieved contexts are filtered to remove irrelevant data, ensuring only the most relevant information proceeds to the next step.
 
- -**Update Answer (update_answer)**
+ **Update Answer (update_answer)**
   An answer is generated based on the filtered contexts:
 
   If the question is irrelevant, the workflow directly ends at the __end__ node.
   If the generated answer has a confidence score below the threshold, the process moves to the update_feedback node.
- -**Update Feedback (update_feedback)**
+ **Update Feedback (update_feedback)**
   Feedback is gathered, and the query is rewritten based on the feedback. The workflow then transitions to the update_query node.
 
- -**Update Query (update_query)**
+ **Update Query (update_query)**
   The rewritten query is used to retrieve new contexts, restarting the flow from the update_contexts node.
 
- -**End (__end__)**
+ **End (__end__)**
   The workflow concludes successfully when a high-confidence answer is generated or the question is deemed irrelevant.
 
 ## **Environment Setup with Conda**
@@ -84,22 +84,22 @@ To set up the environment using Conda, follow these steps:
  **Start (__start__)**
   The process begins with initializing the workflow.
 
--**Update Contexts (update_contexts)**
+**Update Contexts (update_contexts)**
   Relevant contexts are fetched and updated from the PostgreSQL and vector database.
 
--**Filter Contexts (filter_contexts)**
+**Filter Contexts (filter_contexts)**
   The retrieved contexts are filtered to remove irrelevant data, ensuring only the most relevant information proceeds to the next step.
 
--**Update Answer (update_answer)**
+**Update Answer (update_answer)**
   An answer is generated based on the filtered contexts:
 
   If the question is irrelevant, the workflow directly ends at the __end__ node.
   If the generated answer has a confidence score below the threshold, the process moves to the update_feedback node.
--**Update Feedback (update_feedback)**
+**Update Feedback (update_feedback)**
   Feedback is gathered, and the query is rewritten based on the feedback. The workflow then transitions to the update_query node.
 
--**Update Query (update_query)**
+**Update Query (update_query)**
   The rewritten query is used to retrieve new contexts, restarting the flow from the update_contexts node.
 
--**End (__end__)**
+**End (__end__)**
   The workflow concludes successfully when a high-confidence answer is generated or the question is deemed irrelevant.
