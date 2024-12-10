@@ -18,6 +18,7 @@ This project leverages LangGraph to build a document-based search and Q&A system
   
 - **Query Workflow**
 ![lang_graph](https://github.com/user-attachments/assets/a5faee52-dd99-4c2d-9eb7-46d692b2891d)
+
  **Start (__start__)**
   The process begins with initializing the workflow.
 
